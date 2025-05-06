@@ -1,0 +1,360 @@
+{
+  "api_version": "1.0.0",
+  "last_updated": "2024-03-19",
+  "description": "ModeWifi BLE API Specification",
+  
+  "characteristics": {
+    "command": {
+      "uuid": "beb5483e-36e1-4688-b7f5-ea07361b26a8",
+      "description": "Write-only characteristic for sending commands to the device",
+      "format": "JSON"
+    },
+    "state": {
+      "uuid": "beb5483e-36e1-4688-b7f5-ea07361b26a9",
+      "description": "Read/Notify characteristic for receiving device state updates",
+      "format": "JSON"
+    },
+    "pairing": {
+      "uuid": "beb5483e-36e1-4688-b7f5-ea07361b26aa",
+      "description": "Write/Read characteristic for device pairing",
+      "format": "String"
+    }
+  },
+
+  "state_format": {
+    "description": "Complete device state update",
+    "fields": {
+      "timestamp": {
+        "type": "number",
+        "description": "Milliseconds since device boot",
+        "example": 1234567890
+      },
+      "version": {
+        "type": "string",
+        "description": "API version matching this specification",
+        "example": "1.0.0"
+      },
+      "ac": {
+        "type": "object",
+        "description": "Air conditioning system state",
+        "fields": {
+          "mode": {
+            "type": "number",
+            "description": "Operating mode (0=off, 1=cool, 2=heat, 3=auto)",
+            "range": [0, 3]
+          },
+          "fan_mode": {
+            "type": "number",
+            "description": "Fan mode (0=auto, 1=low, 2=medium, 3=high)",
+            "range": [0, 3]
+          },
+          "fan_speed": {
+            "type": "number",
+            "description": "Fan speed (0-100%)",
+            "range": [0, 100]
+          },
+          "setpoint": {
+            "type": "number",
+            "description": "Temperature setpoint in Fahrenheit",
+            "range": [60, 90]
+          }
+        }
+      },
+      "heater": {
+        "type": "object",
+        "description": "Heater system state",
+        "fields": {
+          "mode": {
+            "type": "string",
+            "description": "Operating mode",
+            "enum": ["auto", "manual"]
+          },
+          "fan_speed": {
+            "type": "number",
+            "description": "Fan speed (0-100%)",
+            "range": [0, 100]
+          },
+          "setpoint": {
+            "type": "number",
+            "description": "Temperature setpoint in Fahrenheit",
+            "range": [60, 90]
+          },
+          "hot_water": {
+            "type": "boolean",
+            "description": "Hot water system status"
+          },
+          "glycol_inlet": {
+            "type": "number",
+            "description": "Glycol inlet temperature in Fahrenheit",
+            "range": [32, 212]
+          },
+          "glycol_outlet": {
+            "type": "number",
+            "description": "Glycol outlet temperature in Fahrenheit",
+            "range": [32, 212]
+          }
+        }
+      },
+      "vent": {
+        "type": "object",
+        "description": "Roof vent state",
+        "fields": {
+          "position": {
+            "type": "number",
+            "description": "Vent position (0-100%)",
+            "range": [0, 100]
+          },
+          "speed": {
+            "type": "number",
+            "description": "Fan speed (0-100%)",
+            "range": [0, 100]
+          },
+          "direction": {
+            "type": "number",
+            "description": "Fan direction (0=in, 1=out)",
+            "range": [0, 1]
+          }
+        }
+      },
+      "sensors": {
+        "type": "object",
+        "description": "Sensor readings",
+        "fields": {
+          "ambient_temp": {
+            "type": "number",
+            "description": "Ambient temperature in Fahrenheit",
+            "range": [32, 122]
+          },
+          "fresh_water": {
+            "type": "number",
+            "description": "Fresh water tank level (0-100%)",
+            "range": [0, 100]
+          },
+          "gray_water": {
+            "type": "number",
+            "description": "Gray water tank level (0-100%)",
+            "range": [0, 100]
+          }
+        }
+      },
+      "controls": {
+        "type": "object",
+        "description": "Control system states",
+        "fields": {
+          "lights": {
+            "type": "object",
+            "description": "Light control states",
+            "fields": {
+              "cabin": {
+                "type": "boolean",
+                "description": "Cabin lights state"
+              },
+              "reading": {
+                "type": "boolean",
+                "description": "Reading lights state"
+              },
+              "cargo": {
+                "type": "boolean",
+                "description": "Cargo lights state"
+              },
+              "awning": {
+                "type": "boolean",
+                "description": "Awning lights state"
+              }
+            }
+          },
+          "water": {
+            "type": "object",
+            "description": "Water system states",
+            "fields": {
+              "pump": {
+                "type": "boolean",
+                "description": "Water pump state"
+              },
+              "hot_water": {
+                "type": "boolean",
+                "description": "Hot water system state"
+              }
+            }
+          },
+          "awning": {
+            "type": "object",
+            "description": "Awning state",
+            "fields": {
+              "extended": {
+                "type": "boolean",
+                "description": "Awning extension state"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "commands": {
+    "description": "Command format for device control",
+    "format": {
+      "command": {
+        "type": "string",
+        "description": "Command type",
+        "enum": ["awning", "vent", "ac", "heater", "lights", "water"]
+      },
+      "action": {
+        "type": "string",
+        "description": "Action to perform",
+        "required": true
+      }
+    },
+    "examples": {
+      "awning": {
+        "description": "Control awning and awning lights",
+        "actions": {
+          "out": {
+            "description": "Extend awning",
+            "example": {"command": "awning", "action": "out"}
+          },
+          "in": {
+            "description": "Retract awning",
+            "example": {"command": "awning", "action": "in"}
+          },
+          "lights": {
+            "description": "Toggle awning lights",
+            "example": {"command": "awning", "action": "lights"}
+          }
+        }
+      },
+      "vent": {
+        "description": "Control roof vent",
+        "actions": {
+          "open": {
+            "description": "Open vent",
+            "example": {"command": "vent", "action": "open"}
+          },
+          "close": {
+            "description": "Close vent",
+            "example": {"command": "vent", "action": "close"}
+          },
+          "speed": {
+            "description": "Set vent fan speed",
+            "example": {"command": "vent", "action": "speed", "speed": 75}
+          },
+          "direction": {
+            "description": "Set vent fan direction",
+            "example": {"command": "vent", "action": "direction", "direction": 1}
+          }
+        }
+      },
+      "ac": {
+        "description": "Control air conditioning",
+        "actions": {
+          "on": {
+            "description": "Turn AC on",
+            "example": {"command": "ac", "action": "on"}
+          },
+          "off": {
+            "description": "Turn AC off",
+            "example": {"command": "ac", "action": "off"}
+          },
+          "mode": {
+            "description": "Set AC mode",
+            "example": {"command": "ac", "action": "mode", "mode": 1}
+          },
+          "fan": {
+            "description": "Set AC fan mode",
+            "example": {"command": "ac", "action": "fan", "mode": 2}
+          },
+          "speed": {
+            "description": "Set AC fan speed",
+            "example": {"command": "ac", "action": "speed", "speed": 75}
+          },
+          "temp": {
+            "description": "Set AC temperature",
+            "example": {"command": "ac", "action": "temp", "temp": 72.5}
+          }
+        }
+      },
+      "heater": {
+        "description": "Control heating system",
+        "actions": {
+          "on": {
+            "description": "Turn heater on",
+            "example": {"command": "heater", "action": "on"}
+          },
+          "off": {
+            "description": "Turn heater off",
+            "example": {"command": "heater", "action": "off"}
+          },
+          "temp": {
+            "description": "Set heater temperature",
+            "example": {"command": "heater", "action": "temp", "temp": 68.0}
+          },
+          "fan": {
+            "description": "Set heater fan speed",
+            "example": {"command": "heater", "action": "fan", "speed": 50}
+          },
+          "auto": {
+            "description": "Set heater auto mode",
+            "example": {"command": "heater", "action": "auto", "enabled": true}
+          }
+        }
+      },
+      "lights": {
+        "description": "Control lighting systems",
+        "actions": {
+          "cabin": {
+            "description": "Toggle cabin lights",
+            "example": {"command": "lights", "action": "cabin"}
+          },
+          "reading": {
+            "description": "Toggle reading lights",
+            "example": {"command": "lights", "action": "reading"}
+          },
+          "cargo": {
+            "description": "Toggle cargo lights",
+            "example": {"command": "lights", "action": "cargo"}
+          }
+        }
+      },
+      "water": {
+        "description": "Control water systems",
+        "actions": {
+          "pump": {
+            "description": "Control water pump",
+            "example": {"command": "water", "action": "pump", "pump_action": "on"}
+          },
+          "hot": {
+            "description": "Control hot water system",
+            "example": {"command": "water", "action": "hot", "enabled": true}
+          }
+        }
+      }
+    }
+  },
+
+  "responses": {
+    "description": "Command response format",
+    "format": {
+      "status": {
+        "type": "string",
+        "description": "Response status",
+        "enum": ["success", "error"]
+      },
+      "message": {
+        "type": "string",
+        "description": "Response message or error description",
+        "optional": true
+      }
+    },
+    "examples": {
+      "success": {
+        "description": "Successful command execution",
+        "example": {"status": "success", "message": "awning_out"}
+      },
+      "error": {
+        "description": "Command execution error",
+        "example": {"status": "error", "message": "invalid_action"}
+      }
+    }
+  }
+} 

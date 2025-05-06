@@ -1,8 +1,8 @@
-
 #include <WebServer.h>
 #include <Uri.h>
 #include <HTTP_Method.h>
 #include "cm.h"
+#include "ble_interface.h"
 #include <SPI.h>
 #include <Wire.h>
 #include <ESPmDNS.h>
@@ -12,8 +12,8 @@
 #include <mcp2515.h>
 #include <HTTPClient.h>
 
-
 CM cm;
+BLEInterface bleInterface(&cm);
 long lDataTimer = millis();
 char dataBuffer[160];
 bool bVerbose = false;
@@ -2099,9 +2099,6 @@ void setupCanbus ()
 }
 void setup()
 {
-    
-    
-    
     Serial.begin(115200);
     delay(10);
     while (!Serial); // wait for serial attach
@@ -2109,34 +2106,27 @@ void setup()
     Serial.flush();
     delay(500);
     setupSPIFFS();
-   
     
     Serial.println();
     Serial.println("Initializing...");
     Serial.flush();
 
-   
     displayMessage("Config...");
     setupConfig();
-     
-    
     
     bool wifiOK = setupWiFi();
     if (apFound || wifiOK) setupServer();
-  
     
     delay(100);   //important...
     displayMessage("Running...");
     cm.init(&mcp2515);
     pinMode(LED,OUTPUT);
     setupCanbus();
-
     
-    
+    // Initialize BLE
+    bleInterface.begin();
     
     setWebVariable("currentTemperature",(float)69.2);
-    //parseRaw();
-    
 }
 
 void handleUploadData()
@@ -2153,17 +2143,22 @@ void handleUploadData()
 
 void loop()
 {
-   //cm.bSmartSiphonMode = true; // tempdel
-   handleSerial();
-   server.handleClient();
-   handleCanbus();
-   handleUploadData();
-   cm.handleCabinBlink();
-   cm.handleMiniPump();
-   cm.handleSmartSiphon();
-   cm.handleDrinkBlink();
-   cm.handleMinutePump();
-   
-   ///////////////SET LED TO BLINK IF ACCESS POINT MODE IS TRUE
-   
+    handleSerial();
+    server.handleClient();
+    handleCanbus();
+    handleUploadData();
+    cm.handleCabinBlink();
+    cm.handleMiniPump();
+    cm.handleSmartSiphon();
+    cm.handleDrinkBlink();
+    cm.handleMinutePump();
+    
+    // Update BLE interface
+    bleInterface.update();
+    
+    // Toggle LED if in access point mode
+    if (bAccessPointMode) {
+        digitalWrite(LED, !digitalRead(LED));
+        delay(500);
+    }
 }
