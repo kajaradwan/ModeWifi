@@ -35,17 +35,24 @@ BLEInterface::BLEInterface(CM* cm) : cm(cm), deviceConnected(false), isPaired(fa
 }
 
 void BLEInterface::begin() {
+    Serial.println("BLE: Initializing BLE device...");
     // Initialize BLE
     BLEDevice::init(DEVICE_NAME);
+    Serial.println("BLE: Device initialized");
     
     // Create the BLE Server
+    Serial.println("BLE: Creating server...");
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new ServerCallbacks());
+    Serial.println("BLE: Server created");
     
     // Create the BLE Service
+    Serial.println("BLE: Creating service...");
     pService = pServer->createService(SERVICE_UUID);
+    Serial.println("BLE: Service created");
     
     // Create BLE Characteristics
+    Serial.println("BLE: Creating characteristics...");
     pCommandCharacteristic = pService->createCharacteristic(
         COMMAND_UUID,
         BLECharacteristic::PROPERTY_WRITE
@@ -62,19 +69,49 @@ void BLEInterface::begin() {
         PAIRING_UUID,
         BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_READ
     );
+    Serial.println("BLE: Characteristics created");
+
+    // Create additional state characteristics
+    pSystemStateCharacteristic = pService->createCharacteristic(
+        "beb5483e-36e1-4688-b7f5-ea07361b26ab",
+        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY
+    );
+    pSystemStateCharacteristic->addDescriptor(new BLE2902());
+
+    pDeviceStateCharacteristic = pService->createCharacteristic(
+        "beb5483e-36e1-4688-b7f5-ea07361b26ac",
+        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY
+    );
+    pDeviceStateCharacteristic->addDescriptor(new BLE2902());
+
+    pSensorStateCharacteristic = pService->createCharacteristic(
+        "beb5483e-36e1-4688-b7f5-ea07361b26ad",
+        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY
+    );
+    pSensorStateCharacteristic->addDescriptor(new BLE2902());
+
+    pControlStateCharacteristic = pService->createCharacteristic(
+        "beb5483e-36e1-4688-b7f5-ea07361b26ae",
+        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY
+    );
+    pControlStateCharacteristic->addDescriptor(new BLE2902());
     
     // Start the service
+    Serial.println("BLE: Starting service...");
     pService->start();
+    Serial.println("BLE: Service started");
     
     // Start advertising
+    Serial.println("BLE: Starting advertising...");
     BLEAdvertising *pAdvertising = pServer->getAdvertising();
     pAdvertising->addServiceUUID(SERVICE_UUID);
     pAdvertising->setScanResponse(true);
     pAdvertising->setMinPreferred(0x06);
     pAdvertising->setMinPreferred(0x12);
     pAdvertising->start();
+    Serial.println("BLE: Advertising started");
     
-    Serial.println("BLE device ready");
+    Serial.println("BLE: Device ready and advertising");
 }
 
 void BLEInterface::update() {

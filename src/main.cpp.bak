@@ -1,0 +1,226 @@
+#include "main.h"
+#include <WebServer.h>
+#include <Uri.h>
+#include <HTTP_Method.h>
+#include "cm.h"
+#include "ble_interface.h"
+#include <SPI.h>
+#include <Wire.h>
+#include <ESPmDNS.h>
+#include <SPIFFS.h>
+#include <WiFi.h>
+#include <ArduinoJson.h>
+#include <mcp2515.h>
+#include <HTTPClient.h>
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
+
+// Global variables
+WebServer server(80);
+MCP2515 mcp2515(5);
+can_frame canMsg;
+CM cm;
+BLEInterface bleInterface(&cm);
+
+// Device name
+#define DEVICE_NAME "ModeWifi"
+
+// Service and Characteristic UUIDs
+#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+
+BLEServer* pServer = nullptr;
+BLECharacteristic* pCharacteristic = nullptr;
+bool deviceConnected = false;
+
+// Callback class for server
+class TestServerCallbacks: public BLEServerCallbacks {
+    void onConnect(BLEServer* pServer) {
+        deviceConnected = true;
+        Serial.println("Device connected");
+    };
+
+    void onDisconnect(BLEServer* pServer) {
+        deviceConnected = false;
+        Serial.println("Device disconnected");
+        // Restart advertising
+        pServer->getAdvertising()->start();
+    }
+};
+
+// Function implementations
+void sendPost(char* szCommand) {
+    // Implementation
+}
+
+void handleMainCommand(String szCommand) {
+    // Implementation
+}
+
+void handleCommand(const std::string& command) {
+    // Convert std::string to String and call handleMainCommand
+    handleMainCommand(String(command.c_str()));
+}
+
+void resetFilters() {
+    // Implementation
+}
+
+bool filterInMsg(long drg) {
+    // Implementation
+    return true;
+}
+
+bool filterOutMsg(long drg) {
+    // Implementation
+    return true;
+}
+
+bool filterInByte0(byte b) {
+    // Implementation
+    return true;
+}
+
+bool filterOutByte0(byte b) {
+    // Implementation
+    return true;
+}
+
+void handlePDMMessage(float t, can_frame m) {
+    // Implementation
+}
+
+void handlePDMShort(can_frame m) {
+    // Implementation
+}
+
+int ssidExists(String search) {
+    // Implementation
+    return 0;
+}
+
+void setWebVariable(const char* szVariableName, int nValue) {
+    // Implementation
+}
+
+void setWebVariable(const char* szVariableName, float fValue) {
+    // Implementation
+}
+
+void postCurrentState() {
+    // Implementation
+}
+
+void logData(int nSensorID, const char* szDataType, const char* szDataValue) {
+    // Implementation
+}
+
+void handleFileUpload() {
+    // Implementation
+}
+
+void handleAJAX() {
+    // Implementation
+}
+
+void parseFile(String szFname) {
+    // Implementation
+}
+
+void setup() {
+    // Initialize Serial communication
+    Serial.begin(115200);
+    delay(1000);  // Give serial time to initialize
+    Serial.println("\n\n=== ModeWifi Starting ===");
+    Serial.println("Initializing SPI...");
+
+    // Initialize SPI for CAN bus
+    SPI.begin();
+    Serial.println("SPI initialized");
+    
+    // Initialize CAN bus
+    Serial.println("Initializing CAN bus...");
+    mcp2515.reset();
+    mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ);
+    mcp2515.setNormalMode();
+    Serial.println("CAN bus initialized");
+    
+    // Initialize BLE
+    Serial.println("Starting BLE initialization...");
+    BLEDevice::init(DEVICE_NAME);
+    Serial.println("BLE initialized");
+
+    // Create the BLE Server
+    Serial.println("Creating server...");
+    pServer = BLEDevice::createServer();
+    pServer->setCallbacks(new TestServerCallbacks());
+    Serial.println("Server created");
+
+    // Create the BLE Service
+    Serial.println("Creating service...");
+    BLEService *pService = pServer->createService(SERVICE_UUID);
+    Serial.println("Service created");
+
+    // Create a BLE Characteristic
+    Serial.println("Creating characteristic...");
+    pCharacteristic = pService->createCharacteristic(
+        CHARACTERISTIC_UUID,
+        BLECharacteristic::PROPERTY_READ |
+        BLECharacteristic::PROPERTY_WRITE |
+        BLECharacteristic::PROPERTY_NOTIFY
+    );
+    pCharacteristic->addDescriptor(new BLE2902());
+    Serial.println("Characteristic created");
+
+    // Start the service
+    Serial.println("Starting service...");
+    pService->start();
+    Serial.println("Service started");
+
+    // Start advertising
+    Serial.println("Starting advertising...");
+    BLEAdvertising *pAdvertising = pServer->getAdvertising();
+    pAdvertising->addServiceUUID(SERVICE_UUID);
+    pAdvertising->setScanResponse(true);
+    pAdvertising->setMinPreferred(0x06);  // functions that help with iPhone connections issue
+    pAdvertising->setMinPreferred(0x12);
+    pAdvertising->start();
+    Serial.println("Advertising started");
+    Serial.println("=== Setup Complete ===");
+    Serial.println("BLE device should be discoverable as 'ModeWifi'");
+}
+
+void loop() {
+    static unsigned long lastDebug = 0;
+    unsigned long now = millis();
+    
+    // Update BLE interface
+    bleInterface.update();
+    
+    // Handle CAN messages
+    if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
+        handlePDMMessage(millis() / 1000.0, canMsg);
+    }
+    
+    // Print debug message every 5 seconds
+    if (now - lastDebug > 5000) {
+        Serial.println("System running... BLE should be advertising");
+        lastDebug = now;
+    }
+    
+    if (deviceConnected) {
+        // Send a notification every second
+        static unsigned long lastNotification = 0;
+        if (millis() - lastNotification > 1000) {
+            String message = "Hello from ModeWifi! " + String(millis());
+            pCharacteristic->setValue(message.c_str());
+            pCharacteristic->notify();
+            lastNotification = millis();
+        }
+    }
+    
+    // Small delay to prevent CPU hogging
+    delay(10);
+}

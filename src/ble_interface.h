@@ -92,6 +92,8 @@ public:
     void handleCommand(const std::string& command);
     void sendStatus();
     void sendInitialState();
+    void sendStateUpdate();
+    void sendCommandResponse(const char* status, const char* message = nullptr);
 
 private:
     BLEServer* pServer;

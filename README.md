@@ -1,4 +1,3 @@
-
 # ModeWifi
 Adding Wifi to a Storyteller Campervan
 
@@ -163,3 +162,64 @@ https://www.amazon.com/dp/B0718T232Z
   start"
   stop")
   
+# ESP32 BLE Test
+
+This is a simple test program for the ESP32-WROOM-32D's Bluetooth Low Energy (BLE) functionality.
+
+## Requirements
+
+- ESP32-WROOM-32D development board
+- USB cable (data-capable)
+- Powered USB hub or direct USB port
+- PlatformIO IDE or VSCode with PlatformIO extension
+
+## Setup
+
+1. Clone this repository
+2. Open the project in PlatformIO
+3. Connect the ESP32 to a powered USB hub or direct USB port
+4. Build and upload the code
+
+## Testing
+
+1. After uploading, open the Serial Monitor at 115200 baud
+2. You should see initialization messages
+3. The device should be discoverable as "ModeWifi"
+4. Use a BLE scanner app (like nRF Connect) to find the device
+5. Connect to the device
+6. You should see battery level notifications
+
+## Expected Behavior
+
+1. Serial Monitor should show:
+   ```
+   === ESP32-WROOM-32D BLE Test Starting ===
+   Initializing BLE...
+   BLE initialized
+   Creating server...
+   Server created
+   Service created
+   Characteristic created
+   Service started
+   Starting advertising...
+   Advertising started
+   === BLE Test Ready - Device should be discoverable ===
+   ```
+
+2. The device should be discoverable as "ModeWifi"
+3. When connected, it will send battery level notifications every second
+4. The LED on the ESP32 should be blue (not red)
+
+## Troubleshooting
+
+If the device is not discoverable:
+1. Check if the LED is red (indicates power issue)
+2. Try a different USB port or powered USB hub
+3. Try a different USB cable
+4. Check Serial Monitor for any error messages
+
+## Notes
+
+- The device uses the standard Battery Service (UUID: 180F)
+- Battery level is simulated at 100%
+- Advertising intervals are set to 32ms-64ms for good discoverability
